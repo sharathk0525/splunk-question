@@ -1,0 +1,108 @@
+I have a repeating json payload appearing in my logs.
+I am interested in capturing the last payload from the logs.
+right now I am seeing 3 events with below search query, but I wanted the last event
+here is my search query
+
+search query
+index=abc_applications cf_space_name=production cf_app_name="my-app-name" "\"newAction\":\"request-change"\" AND "Final obj-1----------" 
+| rex field=_raw "Final obj-1----------(?P<json_data_1>\{.*\})"
+
+| eval json_data = mvindex(json_data_1, -1)
+| spath input=json_data
+| rename data.cRID as CRID
+| eval Attachment_Count = spath(json_data, "changeAttachment{}")
+| eval Approver_Count = spath(json_data, "changeApprover{}")
+| eval Config_Count = spath(json_data, "changeConfigItem{}")| stats count(Attachment_Count) as Attachment_Count, count(Approver_Count) as Approver_Count, count(Config_Count) as Config_Item_Count by CRID
+
+I am getting output as, its giving cumulative results
+
+CRID	Attachment_Count	Approver_Count	Config_Item_Count
+1111	6	3	3
+
+but I wanted output as
+
+CRID	Attachment_Count	Approver_Count	Config_Item_Count
+1111	2	1	1
+
+
+this is how my logs appear
+you will not see this text(====start====) (====end===) in the logs, just for understanding purpose I added this line, to differentiate repeating logs
+
+The logs are exactly identical and repeating in pattern
+
+================start=============
+
+Final obj-1----------
+{
+"action":"Waiting Approval",
+"changeConfigItem":[
+{}
+
+],
+
+"changeApprover":[
+{}
+
+],
+
+"changeAttachment":[
+{},
+{}
+
+]
+"newAction":"request-change"
+}
+
+================end=============
+
+==========start==================
+
+Final obj-1----------
+{
+"action":"Waiting Approval",
+"changeConfigItem":[
+{}
+
+],
+
+"changeApprover":[
+{}
+
+],
+
+"changeAttachment":[
+{},
+{}
+
+],
+ "data":{ "cRID":"1111"}
+
+
+"newAction":"request-change"
+}
+==========end==================
+
+==========start==================
+
+Final obj-1----------
+{
+"action":"Waiting Approval",
+"changeConfigItem":[
+{}
+
+],
+
+"changeApprover":[
+{}
+
+],
+
+"changeAttachment":[
+{},
+{}
+
+]
+"newAction":"request-change"
+},
+ "data":{ "cRID":"1111"}
+==========end==================
